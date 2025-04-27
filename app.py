@@ -47,6 +47,6 @@ def predict():
     except Exception as e:
         return jsonify({'error': str(e)})
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
     # Dùng Flask trên host và cổng đúng cách
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
+ #   app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
