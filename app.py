@@ -38,7 +38,7 @@ def predict():
         img_28x28 = ImageOps.invert(img_28x28)
 
         img_array = np.array(img_28x28) / 255.0
-        prediction = model.predict(img_array.reshape(1, 28, 28), verbose=0)
+        prediction = model.predict(img_array.reshape(1, 28, 28, 1), verbose=0)  # Thêm chiều kênh (1)
         digit = int(np.argmax(prediction))
         confidence = float(np.max(prediction))
 
@@ -48,5 +48,5 @@ def predict():
         return jsonify({'error': str(e)})
 
 if __name__ == "__main__":
-    from flask import Flask
+    # Dùng Flask trên host và cổng đúng cách
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
