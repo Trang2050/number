@@ -8,9 +8,8 @@ import os
 
 app = Flask(__name__)
 
-# Load model khi app khởi động
-MODEL_PATH = "your_model.h5"
-model = tf.keras.models.load_model(MODEL_PATH)
+# Load model
+model = tf.keras.models.load_model('your_model.h5')
 
 @app.route('/')
 def index():
@@ -19,12 +18,9 @@ def index():
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        data = request.json.get('image')
-        if not data:
-            return jsonify({'error': 'No image data received'})
-
+        data = request.json['image']
         img_data = base64.b64decode(data.split(',')[1])
-        img = Image.open(io.BytesIO(img_data)).convert('L')  # Grayscale
+        img = Image.open(io.BytesIO(img_data)).convert('L')  # convert to grayscale
 
         bbox = img.getbbox()
         if not bbox:
@@ -41,16 +37,15 @@ def predict():
         img_28x28 = ImageOps.invert(img_28x28)
 
         img_array = np.array(img_28x28) / 255.0
-        img_array = img_array.reshape(1, 28, 28, 1)  # Thêm channel cho model CNN
-
-        prediction = model.predict(img_array, verbose=0)
+        prediction = model.predict(img_array.reshape(1, 28, 28), verbose=0)
         digit = int(np.argmax(prediction))
         confidence = float(np.max(prediction))
 
         return jsonify({'digit': digit, 'confidence': f"{confidence:.2%}"})
+
     except Exception as e:
         return jsonify({'error': str(e)})
 
 if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
