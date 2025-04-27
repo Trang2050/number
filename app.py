@@ -8,8 +8,9 @@ import os
 
 app = Flask(__name__)
 
-# Load model
-model = tf.keras.models.load_model('your_model.h5')
+# Load model khi app khởi động
+MODEL_PATH = "your_model.h5"
+model = tf.keras.models.load_model(MODEL_PATH)
 
 @app.route('/')
 def index():
@@ -18,19 +19,21 @@ def index():
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        data = request.json['image']
-        img_data = base64.b64decode(data.split(',')[1])
-        img = Image.open(io.BytesIO(img_data)).convert('L')  # convert to grayscale
+        data = request.json.get('image')
+        if not data:
+            return jsonify({'error': 'No image data received'})
 
-        # Preprocess như trong Tkinter app
+        img_data = base64.b64decode(data.split(',')[1])
+        img = Image.open(io.BytesIO(img_data)).convert('L')  # Grayscale
+
         bbox = img.getbbox()
         if not bbox:
             return jsonify({'digit': 'Vui lòng vẽ chữ số!'})
 
-        width, height = bbox[2]-bbox[0], bbox[3]-bbox[1]
+        width, height = bbox[2] - bbox[0], bbox[3] - bbox[1]
         size = max(width, height) + 20
         img_processed = Image.new("L", (size, size), 255)
-        img_processed.paste(img.crop(bbox), ((size-width)//2, (size-height)//2))
+        img_processed.paste(img.crop(bbox), ((size - width) // 2, (size - height) // 2))
         img_processed = img_processed.resize((20, 20))
 
         img_28x28 = Image.new("L", (28, 28), 255)
@@ -38,15 +41,16 @@ def predict():
         img_28x28 = ImageOps.invert(img_28x28)
 
         img_array = np.array(img_28x28) / 255.0
-        prediction = model.predict(img_array.reshape(1, 28, 28, 1), verbose=0)  # Thêm chiều kênh (1)
+        img_array = img_array.reshape(1, 28, 28, 1)  # Thêm channel cho model CNN
+
+        prediction = model.predict(img_array, verbose=0)
         digit = int(np.argmax(prediction))
         confidence = float(np.max(prediction))
 
         return jsonify({'digit': digit, 'confidence': f"{confidence:.2%}"})
-
     except Exception as e:
         return jsonify({'error': str(e)})
 
-#if __name__ == "__main__":
-    # Dùng Flask trên host và cổng đúng cách
- #   app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
+if __name__ == "__main__":
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host="0.0.0.0", port=port)
